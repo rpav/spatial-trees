@@ -132,7 +132,8 @@
                      (parent new) new-root))))))))
   tree)
 
-(defun adjust-tree (tree node &optional new)
+(defgeneric adjust-tree (tree node &optional new))
+(defmethod adjust-tree ((tree r-tree) node &optional new)
   (cond
     ((eq node (root-node tree)) new)
     (t
