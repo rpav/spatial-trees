@@ -2,7 +2,7 @@
 
 (in-package "SPATIAL-TREES-IMPL")
 
-(defparameter *kinds* '(:r :greene :r* :x))
+(defvar *kinds* '(:r :greene :r* :x))
 
 (defun make-random-rectangle (&optional (x-bias 0.0) (y-bias 0.0))
   (let* ((lx (+ (random 1.0) x-bias))

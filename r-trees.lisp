@@ -16,23 +16,6 @@
 ;;;; that when one group becomes too full, all split algorithms simply
 ;;;; put the remaining elements in the other group without further
 ;;;; comparisons."
-;;;;
-;;;; * (TODO):
-;;;;
-;;;; ** code desuckification (see particularly rstar-trees.lisp for
-;;;;    this; even if the algorithm was invented by deranged monkeys
-;;;;    on crack, it's no excuse for code of this [lack of] quality);
-;;;;
-;;;; ** performance desuckification (particularly of index building --
-;;;;    it's incredibly slow, but also maybe working on the compiler's
-;;;;    understanding of REDUCE);
-;;;;
-;;;; ** R+-trees, X-trees
-;;;; 
-;;;; ** proper test harness.
-;;;;
-;;;; THIS IS PRERELEASE SOURCE CODE.  IT WILL EAT YOUR LUNCH.  DON'T
-;;;; BLAME ME WHEN IT HAPPENS.
 
 (in-package "SPATIAL-TREES-IMPL")
 

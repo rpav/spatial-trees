@@ -29,4 +29,6 @@
             :pathname #.(make-pathname :directory '(:relative))
             :components
             ((:static-file "spatial-tree-test"
-                           :pathname #p"spatial-tree-test.lisp")))))
+                           :pathname #p"spatial-tree-test.lisp")))
+   (:static-file "LICENCE")
+   (:static-file "TODO")))
