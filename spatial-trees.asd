@@ -21,7 +21,7 @@
             :depends-on (base)
             :pathname #.(make-pathname :directory '(:relative))
             :components
-            ((:file "r-tree-viz"
+            ((:file "spatial-tree-viz"
                     :in-order-to
                     ((compile-op (feature :clim))
                      (load-op (feature :clim))))))
