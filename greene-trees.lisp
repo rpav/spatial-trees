@@ -98,39 +98,44 @@
   (dolist (r list)
     (insert r tree))
   (let ((r (make-rectangle :lows '(0.0 0.0) :highs '(1.0 1.0))))
-    (sb-profile:profile "SPATIAL-TREES-IMPL")
     (time (search r tree))
-    (sb-profile:report)
-    (sb-profile:unprofile)
-    (sb-profile:profile "SPATIAL-TREES-IMPL")
     ;; this should probably be a shade less than three times as slow
     ;; as the tree-based search.
     (time (remove-if-not (lambda (x) (intersectp x r)) list))
-    (sb-profile:report)
-    (sb-profile:unprofile)
     (assert (= (length (search r tree)) n))))
 
 (let* ((n 100)
        (list (loop repeat n
                    for r = (make-random-rectangle)
                    collect (cons (lows r) (highs r))))
-       (tree (make-spatial-tree :greene
-                                :rectfun (lambda (x)
-                                           (make-rectangle :lows (car x)
-                                                           :highs (cdr x))))))
+       (rectfun (lambda (x) (make-rectangle :lows (car x) :highs (cdr x))))
+       (tree (make-spatial-tree :greene :rectfun rectfun)))
   (dolist (r list)
     (insert r tree))
   (let ((r (make-random-rectangle)))
     (unless (null (set-difference (search r tree)
                                   (remove-if-not
-                                   (lambda (x) (intersectp (mbr x tree) r))
+                                   (lambda (x)
+                                     (intersectp (funcall rectfun x) r))
                                    list)
                                   :key (lambda (x)
-                                         (list (lows (mbr x tree))
-                                               (highs (mbr x tree))))
+                                         (let ((r (funcall rectfun x)))
+                                           (list (lows r) (highs r))))
                                   :test #'equal))
       (error "aargh: ~S and ~S differ"
              (search r tree)
-             (remove-if-not (lambda (x) (intersectp (mbr x tree) r)) list)))))
+             (remove-if-not (lambda (x)
+                              (intersectp (funcall rectfun x) r))
+                            list)))))
+
+(let* ((n 100)
+       (list (loop repeat n collect (make-random-rectangle)))
+       (tree (make-spatial-tree :greene :rectfun #'identity)))
+  (dolist (r list)
+    (insert r tree))
+  (dolist (r (cdr list))
+    (delete r tree))
+  (unless (= (length (search (car list) tree)) 1)
+    (error "aargh: wrong amount of stuff in ~S" tree)))
 
 |#

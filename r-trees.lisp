@@ -5,7 +5,9 @@
 ;;;; Differences with the algorithms described in that paper:
 ;;;;
 ;;;; * we keep the minimum bounding rectangle of a node's children in
-;;;; the node itself and not in an index pointing to the node;
+;;;; the node itself and not in an index pointing to the node, except
+;;;; for leaves where there is one extra level of indirection (to
+;;;; assist in implementation of R+-trees).
 ;;;;
 ;;;; * we implement (in SPLIT-NODE) a guarantee of the stated
 ;;;; invariant that each node contains at least m elements.  This is
@@ -42,19 +44,18 @@
   (unless (every #'<= (lows o) (highs o))
     (error "Bad coordinates for rectangle: ~S ~S" (lows o) (highs o))))
 (defmethod print-object ((o rectangle) s)
-  (print-unreadable-object (o s :type t)
+  (print-unreadable-object (o s)
     (format s "(~{~D~^,~}) - (~{~D~^,~})" (lows o) (highs o))))
 (defun make-rectangle (&key lows highs)
   (make-instance 'rectangle :lows lows :highs highs))
 
 (defgeneric mbr (thing tree))
 (defmethod mbr ((n spatial-tree-node) (tree spatial-tree))
+  (declare (ignore tree))
   #+nil
   (check (not (eq n (root-node tree)))
          "Root of ~S asked for its MBR" tree)
   (slot-value n 'mbr))
-(defmethod mbr ((o t) (tree spatial-tree))
-  (funcall (rectfun tree) o))
 
 (defun %intersection/1d (l1 h1 l2 h2)
   (cond
@@ -103,6 +104,11 @@
        ((null lows) result)
     (setf result (* result (- high low)))))
 
+(defstruct leaf-node-entry rectangle datum)
+(defmethod mbr ((o leaf-node-entry) (tree spatial-tree))
+  (declare (ignore tree))
+  (leaf-node-entry-rectangle o))
+
 (defclass r-tree (spatial-tree)
   ())
 (defmethod make-spatial-tree ((kind (eql :r)) &rest initargs)
@@ -112,19 +118,21 @@
 
 ;;; 3.1. Searching
 (defmethod search ((o t) (tree r-tree))
-  (search (mbr o tree) tree))
+  (search (funcall (rectfun tree) o) tree))
 
 (defmethod search ((r rectangle) (tree r-tree))
   (labels ((%search (r node)
              (cond
                ((typep node 'spatial-tree-leaf-node)
-                (remove-if-not (lambda (x) (intersectp r (mbr x tree)))
-                               (records node)))
-               (t (apply #'append
-                         (mapcar (lambda (x) (%search r x))
-                                 (remove-if-not (lambda (y)
-                                                  (intersectp r (mbr y tree)))
-                                                (children node))))))))
+                (let (result)
+                  (dolist (entry (records node) (nreverse result))
+                    (when (intersectp r (leaf-node-entry-rectangle entry))
+                      (push (leaf-node-entry-datum entry) result)))))
+               (t
+                (let (result)
+                  (dolist (child (children node) result)
+                    (when (intersectp r (mbr child tree))
+                      (setq result (append (%search r child) result)))))))))
     (let ((root (root-node tree)))
       (%search r root))))
 
@@ -152,7 +160,9 @@
       (%choose-leaf r n))))
 
 (defmethod insert ((r t) (tree r-tree))
-  (let ((leaf-node (choose-leaf r tree)))
+  (let* ((r (make-leaf-node-entry :datum r
+                                  :rectangle (funcall (rectfun tree) r)))
+         (leaf-node (choose-leaf r tree)))
     (cond
       ((< (length (records leaf-node)) (max-per-node tree))
        (push r (records leaf-node))
@@ -214,7 +224,7 @@
 (defmethod delete ((r t) (tree r-tree))
   (let ((leaf-node (find-leaf r (root-node tree) tree)))
     (when leaf-node
-      (setf (records leaf-node) (remove r (records leaf-node)))
+      (setf (records leaf-node) (remove r (records leaf-node) :key #'leaf-node-entry-datum))
       (condense-tree leaf-node tree)
       (unless (typep (root-node tree) 'spatial-tree-leaf-node)
         (when (null (cdr (children (root-node tree))))
@@ -226,14 +236,19 @@
       tree)))
 
 (defun find-leaf (obj node tree)
-  (labels ((%find-leaf (obj node tree)
+  (labels ((%find-leaf (leaf-entry node tree)
              (if (typep node 'spatial-tree-leaf-node)
-                 (when (member obj (records node))
+                 (when (member (leaf-node-entry-datum leaf-entry)
+                               (records node)
+                               :key #'leaf-node-entry-datum)
                    (return-from find-leaf node))
                  (dolist (entry (children node))
-                   (when (intersectp (mbr obj tree) (mbr entry tree))
-                     (%find-leaf obj entry tree))))))
-    (%find-leaf obj node tree)))
+                   (when (intersectp (mbr leaf-entry tree) (mbr entry tree))
+                     (%find-leaf leaf-entry entry tree))))))
+    (%find-leaf (make-leaf-node-entry :datum obj
+                                      :rectangle (funcall (rectfun tree) obj))
+                node
+                tree)))
 
 (defun condense-tree (node tree)
   (labels ((all-leaves-below (node)
@@ -251,7 +266,7 @@
            ;; entries on every level of the tree as already required
            ;; by the deletion algorithm [Gut 84]."
            (dolist (oleaf (all-leaves-below orphan))
-             (insert oleaf tree))))
+             (insert (leaf-node-entry-datum oleaf) tree))))
       (cond
         ((< (length (children node)) (min-per-node tree))
          (setf (children (parent node)) (remove node (children (parent node))))
@@ -370,23 +385,34 @@
        (list (loop repeat n
                    for r = (make-random-rectangle)
                    collect (cons (lows r) (highs r))))
-       (tree (make-spatial-tree :r
-                                :rectfun (lambda (x)
-                                           (make-rectangle :lows (car x)
-                                                           :highs (cdr x))))))
+       (rectfun (lambda (x) (make-rectangle :lows (car x) :highs (cdr x))))
+       (tree (make-spatial-tree :r :rectfun rectfun)))
   (dolist (r list)
     (insert r tree))
   (let ((r (make-random-rectangle)))
     (unless (null (set-difference (search r tree)
                                   (remove-if-not
-                                   (lambda (x) (intersectp (mbr x tree) r))
+                                   (lambda (x)
+                                     (intersectp (funcall rectfun x) r))
                                    list)
                                   :key (lambda (x)
-                                         (list (lows (mbr x tree))
-                                               (highs (mbr x tree))))
+                                         (let ((r (funcall rectfun x)))
+                                           (list (lows r) (highs r))))
                                   :test #'equal))
       (error "aargh: ~S and ~S differ"
              (search r tree)
-             (remove-if-not (lambda (x) (intersectp (mbr x tree) r)) list)))))
-  
+             (remove-if-not (lambda (x)
+                              (intersectp (funcall rectfun x) r))
+                            list)))))
+
+(let* ((n 100)
+       (list (loop repeat n collect (make-random-rectangle)))
+       (tree (make-spatial-tree :r :rectfun #'identity)))
+  (dolist (r list)
+    (insert r tree))
+  (dolist (r (cdr list))
+    (delete r tree))
+  (unless (= (length (search (car list) tree)) 1)
+    (error "aargh: wrong amount of stuff in ~S" tree)))
+
 |#
