@@ -12,7 +12,8 @@
             :components
             ((:file "r-trees")
              (:file "greene-trees" :depends-on ("r-trees"))
-             (:file "rstar-trees" :depends-on ("r-trees"))))
+             (:file "rstar-trees" :depends-on ("r-trees"))
+             (:file "rplus-trees" :depends-on ("r-trees"))))
    (:module viz
             :if-component-dep-fails :ignore
             :pathname #.(make-pathname :directory '(:relative))
