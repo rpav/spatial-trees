@@ -21,4 +21,10 @@
             ((:file "r-tree-viz"
                     :in-order-to
                     ((compile-op (feature :clim) (load-op base))
-                     (load-op (feature :clim) (load-op base))))))))
+                     (load-op (feature :clim) (load-op base))))))
+   (:module tests
+            :depends-on (base)
+            :pathname #.(make-pathname :directory '(:relative))
+            :components
+            ((:static-file "spatial-tree-test"
+                           :pathname #p"spatial-tree-test.lisp")))))
