@@ -11,9 +11,9 @@
    ;; interface definitions
    "DELETE" "INSERT" "SEARCH"
    ;; protocol functions
-   "CHOOSE-LEAF" "SPLIT-NODE"
+   "CHOOSE-LEAF" "SPLIT-NODE" "CHILDREN" "RECORDS" "ROOT-NODE"
    ;; protocol classes
-   "TREE" "NODE" "LEAF-NODE"
+   "SPATIAL-TREE" "SPATIAL-TREE-NODE" "SPATIAL-TREE-LEAF-NODE"
    ))
 
 (cl:defpackage "RECTANGLES"
@@ -23,7 +23,6 @@
            "AREA" "MINIMUM-BOUND" "LOWS" "HIGHS"))
 
 (cl:defpackage "SPATIAL-TREES-IMPL"
-  (:use "CL" "SPATIAL-TREES" "RECTANGLES")
+  (:use "CL" "SPATIAL-TREES" "SPATIAL-TREES-PROTOCOL" "RECTANGLES")
   (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH")
   (:shadowing-import-from "RECTANGLES" "INTERSECTION"))
-

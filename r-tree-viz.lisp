@@ -1,13 +1,14 @@
 (in-package :clim-user)
 
-;;;; R-Tree Visualization Toy
+;;;; spatial-tree Visualization Toy.  Mostly by Andy Hefner; some
+;;;; modifications by Christophe Rhodes
 
 ;; For best results, use a McCLIM newer than Nov.11, 2004  :)
 
-(define-presentation-type r-tree-node ())
-(define-presentation-type rectangle   ())
+(define-presentation-type spatial-tree-node ())
+(define-presentation-type entry ())
 
-(define-application-frame r-tree-viz ()
+(define-application-frame spatial-tree-viz ()
   ((tree :initarg :tree :reader tree)
    (scale :initarg :scale :initform 200 :accessor scale)
    (expanded-nodes :initform (make-hash-table) :reader expanded-nodes))
@@ -26,7 +27,7 @@
                                      :activate-callback 'zoom-in))
           (zoom-out       (make-pane 'push-button :label "Zoom Out"
                                      :activate-callback 'zoom-out)))
-  (:command-table (r-tree-viz))
+  (:command-table (spatial-tree-viz))
   (:pointer-documentation t)  
   (:layouts
    (default
@@ -51,52 +52,55 @@
 (defun print-tree-node (frame pane node &key (indent 0))
   (indenting-output (pane indent)
     (etypecase node
-      (r-trees::r-tree-node
-       (with-output-as-presentation (pane node 'r-tree-node)
-         (format pane "~A (~A children)~%" (type-of node) (length (r-trees::children node)))))
-      (r-trees::rectangle
-       (with-output-as-presentation (pane node 'rectangle)
-         (multiple-value-call #'format pane "Rectangle (~1,2F,~1,2F)-(~1,2F,~1,2F)~%"
-                              (rect* node)))))
+      (spatial-trees-protocol:spatial-tree-node
+       (with-output-as-presentation (pane node 'spatial-tree-node)
+         (format pane "~A (~A children)~%" (type-of node) (length (spatial-trees-protocol:children node)))))
+      (spatial-trees-impl::leaf-node-entry
+       ;; FIXME: this should also be presented as the object in the
+       ;; LEAF-NODE-ENTRY-DATUM slot
+       (with-output-as-presentation (pane node 'entry)
+         (multiple-value-call #'format pane
+                              "Rectangle (~1,2F,~1,2F)-(~1,2F,~1,2F)~%"
+                              (rect* (spatial-trees-impl::leaf-node-entry-rectangle node))))))
     (when (gethash node (expanded-nodes frame))
-      (dolist (child (r-trees::children node))
+      (dolist (child (spatial-trees-protocol:children node))
         (print-tree-node frame pane child :indent (+ indent 16))))))
 
 (defun print-tree-hierarchy (frame pane)
-  (print-tree-node frame pane (r-trees::root-node (tree frame))))
+  (print-tree-node frame pane (spatial-trees-protocol:root-node (tree frame))))
 
 (defun rect* (rectangle)
   (values
-   (first (r-trees::lows rectangle)) (second (r-trees::lows rectangle))
-   (first (r-trees::highs rectangle)) (second (r-trees::highs rectangle))))
+   (first (rectangles:lows rectangle)) (second (rectangles:lows rectangle))
+   (first (rectangles:highs rectangle)) (second (rectangles:highs rectangle))))
    
 (defun draw-layout (frame pane &optional (node (tree frame)))
   (etypecase node
-    (r-trees::r-tree
+    (spatial-trees-protocol:spatial-tree
      (with-room-for-graphics (pane :first-quadrant nil)     
        (with-scaling (pane (scale frame))
-         (draw-layout frame pane (r-trees::root-node node))))
+         (draw-layout frame pane (spatial-trees-protocol:root-node node))))
      (change-space-requirements pane               ;; FIXME: McCLIM should do this itself.
                                 :width  (bounding-rectangle-width (stream-output-history pane))
                                 :height (bounding-rectangle-height (stream-output-history pane))))
-    (r-trees::r-tree-leaf-node
-     (dolist (child (slot-value node 'r-trees::children))
+    (spatial-trees-protocol:spatial-tree-leaf-node
+     (dolist (child (spatial-trees-protocol:records node))
        (draw-layout frame pane child))
-     (when (slot-boundp node 'r-trees::mbr)
+     (when (slot-boundp node 'spatial-trees-impl::mbr)
        (multiple-value-call #'draw-rectangle*
-         pane (rect* (slot-value node 'r-trees::mbr))
+         pane (rect* (slot-value node 'spatial-trees-impl::mbr))
          :ink +red+ :filled nil)))
-    (r-trees::r-tree-node     
-     (dolist (child (slot-value node 'r-trees::children))
+    (spatial-trees-protocol:spatial-tree-node
+     (dolist (child (spatial-trees-protocol:children node))
        (draw-layout frame pane child))
-     (when (slot-boundp node 'r-trees::mbr)
+     (when (slot-boundp node 'spatial-trees-impl::mbr)
        (multiple-value-call #'draw-rectangle*
-         pane (rect* (slot-value node 'r-trees::mbr))
+         pane (rect* (slot-value node 'spatial-trees-impl::mbr))
          :ink +black+ :filled nil)))
-    (r-trees::rectangle
-     (with-output-as-presentation (pane node 'rectangle)
+    (spatial-trees-impl::leaf-node-entry
+     (with-output-as-presentation (pane node 'entry)
        (multiple-value-call #'draw-rectangle*
-       pane (rect* node)
+       pane (rect* (spatial-trees-impl::leaf-node-entry-rectangle node))
        :ink +blue+ :filled nil :line-dashes #(1 1))))))
 
 ;;; Callbacks
@@ -115,22 +119,24 @@
 
 ;;; Commands
 
-(define-r-tree-viz-command (com-toggle-node :name "Toggle Expand Node")
-    ((node 'r-tree-node :prompt :node :gesture :select))
+(define-spatial-tree-viz-command (com-toggle-node :name "Toggle Expand Node")
+    ((node 'spatial-tree-node :prompt :node :gesture :select))
   (if (gethash node (expanded-nodes *application-frame*))
       (remhash node (expanded-nodes *application-frame*))
       (setf (gethash node (expanded-nodes *application-frame*)) t))
   (setf (pane-needs-redisplay (get-frame-pane *application-frame* 'hierarchy-pane)) t))
 
-(define-r-tree-viz-command (com-describe-node :name "Describe Node")
-    ((node 'r-tree-node :prompt :node :gesture :describe))
+(define-spatial-tree-viz-command (com-describe-node :name "Describe Node")
+    ((node 'spatial-tree-node :prompt :node :gesture :describe))
   (describe node (get-frame-pane *application-frame* 'inspect)))
 
-(define-r-tree-viz-command (com-describe-rectangle :name "Describe Rectangle")
-    ((node 'rectangle :prompt :node :gesture :describe))
+(define-spatial-tree-viz-command (com-describe-entry :name "Describe Entry")
+    ((node 'entry :prompt :node :gesture :describe))
   (describe node (get-frame-pane *application-frame* 'inspect)))
 
 ;;; Foo
 
-(defun inspect-r-tree (tree)
-  (run-frame-top-level (make-application-frame 'clim-user::r-tree-viz :tree tree :pretty-name "R-Tree Visualizer")))
+(defun inspect-spatial-tree (tree)
+  (run-frame-top-level
+   (make-application-frame 'spatial-tree-viz
+                           :tree tree :pretty-name "Spatial Tree Visualizer")))
