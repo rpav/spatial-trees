@@ -19,6 +19,11 @@ Issues of code quality:
   This subtraction of invariants appears to be a poor fit with the
   simple class hierarchy.
 
+* The visualiser is a reasonable barometer onto the tightness of the
+  protocol; the current verdict is "not terribly".  Aim to reduce
+  initmate knowledge of internals in the CLIM inspector in as much as
+  that's possible.
+
 Issues of performance:
 
 * MBR seems a little too low-level to be implemented as an (expensive,
@@ -48,4 +53,5 @@ Issues of generality:
 
 Miscellaneous issues:
 
-[ none as yet ]
+* The visualiser should present and describe the object in a
+  leaf-node-entry, not just rectangles.
