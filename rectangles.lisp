@@ -5,6 +5,11 @@
 ;;; positive infinity) or a number (representing itself).  By
 ;;; convention, lower bounds are inclusive and higher bounds are
 ;;; exclusive; we currently do not have a way to specify otherwise.
+;;; (An exclusive upper bound of +\infty doesn't really make that much
+;;; sense, but it's functionally indistinguishable from an inclusive
+;;; upper bound for all except the degenerate rectangle with lower and
+;;; upper bounds at +\infty, and I suspect that this case never
+;;; arises in any way that matters.  FIXME nevertheless.)
 
 (defun bound= (x y)
   (case x
