@@ -62,3 +62,6 @@
 (define-protocol-function split-node (tree new node))
 
 (defgeneric make-spatial-tree (kind &rest initargs &key &allow-other-keys))
+
+(defgeneric check-consistency (tree)
+  (:method-combination progn))
