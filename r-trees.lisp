@@ -36,19 +36,6 @@
 
 (in-package "SPATIAL-TREES-IMPL")
 
-(defclass rectangle ()
-  ((lows :initarg :lows :reader lows)
-   (highs :initarg :highs :reader highs)))
-(defmethod initialize-instance :after ((o rectangle) &rest args)
-  (declare (ignore args))
-  (unless (every #'<= (lows o) (highs o))
-    (error "Bad coordinates for rectangle: ~S ~S" (lows o) (highs o))))
-(defmethod print-object ((o rectangle) s)
-  (print-unreadable-object (o s)
-    (format s "(~{~D~^,~}) - (~{~D~^,~})" (lows o) (highs o))))
-(defun make-rectangle (&key lows highs)
-  (make-instance 'rectangle :lows lows :highs highs))
-
 (defgeneric mbr (thing tree))
 (defmethod mbr ((n spatial-tree-node) (tree spatial-tree))
   (declare (ignore tree))
@@ -57,52 +44,8 @@
          "Root of ~S asked for its MBR" tree)
   (slot-value n 'mbr))
 
-(defun %intersection/1d (l1 h1 l2 h2)
-  (cond
-    ((<= l1 l2 h1) (cons l2 (min h1 h2)))
-    ((<= l2 l1 h2) (cons l1 (min h1 h2)))))
-
-(defgeneric intersectp (one two))
-(defmethod intersectp ((r1 rectangle) (r2 rectangle))
-  (every #'%intersection/1d (lows r1) (highs r1) (lows r2) (highs r2)))
-
-(defgeneric intersection (one two))
-(defmethod intersection ((r1 rectangle) (r2 rectangle))
-  (let ((intersections (mapcar #'%intersection/1d
-                               (lows r1) (highs r1)
-                               (lows r2) (highs r2))))
-    (make-rectangle
-     :lows (mapcar (lambda (x)
-                     (when (null x)
-                       (return-from intersection nil))
-                     (car x))
-                   intersections)
-     :highs (mapcar #'cdr intersections))))
-
-(defgeneric minimum-bound (one two))
-(defmethod minimum-bound ((r1 rectangle) (r2 rectangle))
-  (make-rectangle
-   :lows #+slow (mapcar #'min (lows r1) (lows r2))
-   (loop for l1 in (lows r1) for l2 in (lows r2)
-         collect (min l1 l2))
-   :highs #+slow (mapcar #'max (highs r1) (highs r2))
-   (loop for h1 in (highs r1) for h2 in (highs r2)
-         collect (max h1 h2))))
-
 (defun minimum-bound-of (objects tree)
   (reduce #'minimum-bound objects :key (lambda (x) (mbr x tree))))
-
-(defgeneric area (object))
-(defmethod area ((r rectangle))
-  #+slow ; unbearably slow and consy(!)
-  (reduce #'* (mapcar #'- (highs r) (lows r)))
-  (do* ((lows (lows r) (cdr lows))
-        (low (car lows) (car lows))
-        (highs (highs r) (cdr highs))
-        (high (car highs) (car highs))
-        (result 1))
-       ((null lows) result)
-    (setf result (* result (- high low)))))
 
 (defstruct leaf-node-entry rectangle datum)
 (defmethod mbr ((o leaf-node-entry) (tree spatial-tree))

@@ -5,7 +5,8 @@
             :pathname #.(make-pathname :directory '(:relative))
             :components
             ((:file "package")
-             (:file "basedefs" :depends-on ("package"))))
+             (:file "basedefs" :depends-on ("package"))
+             (:file "rectangles" :depends-on ("package"))))
    (:module tree-impls
             :depends-on (base)
             :pathname #.(make-pathname :directory '(:relative))
