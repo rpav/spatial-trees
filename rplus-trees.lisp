@@ -11,7 +11,9 @@
 (defclass r+-tree (r-tree)
   ((fill-factor :initarg :fill-factor :accessor fill-factor)))
 (defmethod make-spatial-tree :around ((kind (eql :r+)) &rest initargs)
-  (cerror "R+ trees seem broken to me.  Really make an R+ tree?")
+  (declare (ignore initargs))
+  (cerror "Make an R+-tree nevertheless"
+          "R+-trees' dynamic insertion is broken.")
   (call-next-method))
 (defmethod make-spatial-tree ((kind (eql :r+)) &rest initargs)
   (apply #'make-instance 'r+-tree
