@@ -17,8 +17,7 @@
 
 (defclass x-tree-node (spatial-tree-node)
   ((split-tree :initarg :split-tree :accessor split-tree)))
-(defmethod split-tree ((x spatial-tree-leaf-node))
-  x)
+
 ;;; Do we actually need to keep track of what is and what isn't a
 ;;; supernode?  I'm not sure that we do...
 (defclass x-tree-supernode (x-tree-node)
@@ -27,8 +26,34 @@
 (defclass x-tree-leaf-supernode (x-tree-supernode spatial-tree-leaf-node)
   ())
 
-(defvar *split*)
-
+;;; Split trees.
+;;;
+;;; In the X-tree algorithms, we are required to store the 'split
+;;; history' of a node.  In typical academic fashion, this is
+;;; extremely badly explained in the paper itself; I think I've
+;;; reconstructed what's necessary, but it's not obvious that it's a
+;;; huge win.
+;;;
+;;; In clearer terms, then, when we split a node, we record in the
+;;; node's parent (which is possibly the new root node of the tree)
+;;; the split in a 'split tree', which we represent using
+;;; non-NULL-terminated conses.  When a node overflows, we replace it
+;;; in its parent's split tree with a cons of the original node and
+;;; the new one; when the root node overflows, the new root node
+;;; acquires a split tree of (old . new).
+;;;
+;;; A new non-leaf node, meanwhile, must result from a split of a
+;;; previous such non-leaf node with its own split-tree information.
+;;; We construct two new split trees from the original node's split
+;;; tree, such that the tree structure is preserved as much as
+;;; possible while retaining only those children contained in the
+;;; redistributed nodes.
+;;;
+;;; When a node comes to be split, one potentially good split of its
+;;; children is into the two sets defined by its left- and right-split
+;;; trees; this is exploited, unless the split is too unbalanced, if
+;;; the ordinary topological split fails to find a sufficiently good
+;;; partition.
 (defun find-cons-with-leaf (object conses)
   (cond
     ((atom conses) nil)
@@ -42,6 +67,18 @@
     ((atom split-tree) (list split-tree))
     (t (append (leaves-of-split-tree (car split-tree))
                (leaves-of-split-tree (cdr split-tree))))))
+
+(defun split-tree-from-set (set split-tree)
+  (cond
+    ((atom split-tree) (find split-tree set))
+    (t (let ((car (split-tree-from-set set (car split-tree)))
+             (cdr (split-tree-from-set set (cdr split-tree))))
+         (cond
+           ((null car) cdr)
+           ((null cdr) car)
+           (t (cons car cdr)))))))
+
+(defvar *split*)
 
 ;;; Figure 7: X-tree Insertion Algorithm for Directory Nodes
 (defmethod adjust-tree ((tree x-tree) node &optional new)
@@ -101,8 +138,7 @@
                     (make-instance 'x-tree-node
                                    :children (list (root-node tree) new))))
                (setf (parent (root-node tree)) new-root
-                     (split-tree new-root) (cons (split-tree (root-node tree))
-                                                 (split-tree new))
+                     (split-tree new-root) (cons (root-node tree) new)
                      (root-node tree) new-root
                      (parent new) new-root)))))))
     tree))
@@ -138,6 +174,10 @@
                              (if (typep node 'spatial-tree-leaf-node)
                                  'spatial-tree-leaf-node
                                  'x-tree-node)))
+             (unless (typep node 'spatial-tree-leaf-node)
+               (let ((split-tree (split-tree node)))
+                 (setf (split-tree node) (split-tree-from-set one split-tree)
+                       (split-tree new-node) (split-tree-from-set two split-tree))))
              new-node)
             ((and (not (typep node 'spatial-tree-leaf-node))
                   (let ((split-tree (split-tree node)))
@@ -153,9 +193,23 @@
                            (>= (min-per-node tree) (length l2))
                            (progn
                              (setf (children node) l1
-                                   (slot-value node 'mbr) (minimum-bound-of l1 tree))
+                                   (slot-value node 'mbr) (minimum-bound-of l1 tree)
+                                   (split-tree node) (if (find new l1)
+                                                         (let ((cons (find-cons-with-leaf *split* one)))
+                                                           (if (eq (car cons) *split*)
+                                                               (rplaca cons (cons *split* new))
+                                                               (rplacd cons (cons *split* new)))
+                                                           one)
+                                                         one))
                              (setf (children new-node) l2
-                                   (slot-value new-node 'mbr) (minimum-bound-of l2 tree))
+                                   (slot-value new-node 'mbr) (minimum-bound-of l2 tree)
+                                   (split-tree node) (if (find new l2)
+                                                         (let ((cons (find-cons-with-leaf *split* two)))
+                                                           (if (eq (car cons) *split*)
+                                                               (rplaca cons (cons *split* new))
+                                                               (rplacd cons (cons *split* new)))
+                                                           two)
+                                                         two))
                              new-node)))))))
             (t (change-class node
                              (etypecase node
@@ -171,15 +225,14 @@
                          (rplacd cons (cons *split* new))))))
                nil)))))))
             
-(defun check-consistency (x-tree)
+(defmethod check-consistency progn ((tree x-tree))
   (labels ((%check (node)
              (assert 
               (or (typep node 'spatial-tree-leaf-node)
                   (null (set-difference (children node)
-                                        (leaves-of-split-tree split-tree
-                                        (append (car (split-tree node))
-                                                (cdr (split-tree node)))))))
+                                        (leaves-of-split-tree
+                                         (split-tree node))))))
              (unless (typep node 'spatial-tree-leaf-node)
                (dolist (child (children node))
                  (%check child)))))
-    (%check (root-node x-tree))))
+    (%check (root-node tree))))
