@@ -46,6 +46,7 @@
      (highs :initarg :highs :reader highs)))
   (defmethod initialize-instance :after ((o rectangle) &rest args)
     (declare (ignore args))
+    #+slow
     (unless (every #'bound<= (lows o) (highs o))
       (error "Bad coordinates for rectangle: ~S ~S" (lows o) (highs o))))
   (defun make-rectangle (&key lows highs)
@@ -58,6 +59,7 @@
     (lows nil :read-only t)
     (highs nil :read-only t))
   (defun make-rectangle (&key lows highs)
+    #+slow
     (unless (every #'bound<= lows highs)
       (error "Bad coordinates for rectangle: ~S ~S" lows highs))
     (%make-rectangle lows highs)))
