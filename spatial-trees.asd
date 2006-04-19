@@ -17,14 +17,11 @@
              (:file "rplus-trees" :depends-on ("r-trees"))
              (:file "x-trees" :depends-on ("r-trees" "rstar-trees"))))
    (:module viz
-            :if-component-dep-fails :ignore
             :depends-on (base)
             :pathname #.(make-pathname :directory '(:relative))
             :components
-            ((:file "spatial-tree-viz"
-                    :in-order-to
-                    ((compile-op (feature :clim))
-                     (load-op (feature :clim))))))
+            ((:static-file "spatial-tree-viz"
+                           :pathname #p"spatial-tree-viz.lisp")))
    (:module tests
             :depends-on (base)
             :pathname #.(make-pathname :directory '(:relative))
