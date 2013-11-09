@@ -1,7 +1,7 @@
 (cl:defpackage "SPATIAL-TREES"
   (:use "CL")
   (:shadow "DELETE" "SEARCH")
-  (:export "DELETE" "INSERT" "SEARCH"
+  (:export "DELETE" "INSERT" "SEARCH" "BOUNDING-RECTANGLE"
            "MAKE-SPATIAL-TREE"))
 
 (cl:defpackage "SPATIAL-TREES-PROTOCOL"
@@ -24,5 +24,5 @@
 
 (cl:defpackage "SPATIAL-TREES-IMPL"
   (:use "CL" "SPATIAL-TREES" "SPATIAL-TREES-PROTOCOL" "RECTANGLES")
-  (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH")
+  (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH" "BOUNDING-RECTANGLE")
   (:shadowing-import-from "RECTANGLES" "INTERSECTION"))

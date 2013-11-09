@@ -30,6 +30,12 @@
 (defun minimum-bound-of (objects tree)
   (reduce #'minimum-bound objects :key (lambda (x) (mbr x tree))))
 
+(defun bounding-rectangle (tree)
+  (let ((root (root-node tree)))
+    (if (slot-boundp root 'mbr)
+        (mbr root tree)
+        (minimum-bound-of (children root) tree))))
+
 (defstruct leaf-node-entry rectangle datum)
 (defmethod mbr ((o leaf-node-entry) (tree spatial-tree))
   (declare (ignore tree))
