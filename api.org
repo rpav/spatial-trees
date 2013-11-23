@@ -6,7 +6,13 @@ bounding rectangle.
 Functions such as =insert, delete= and the constructors for a spatial
 trees (such as R-tree or R*-tree) is in *Package* =SPATIAL-TREES=.
 
+If you use both packages, conflicts are expected in 6 symbols. so add
+the following to your =defpackage= in the normal use:
 
+#+BEGIN_SRC lisp
+(:shadowing-import-from :spatial-trees :insert :delete :search)
+(:shadowing-import-from :rectangles :intersection)
+#+END_SRC
 
 * Package =SPATIAL-TREES=
 
@@ -25,7 +31,8 @@ Returns a bounding rectangle of a tree.
 
 ** Generic (insert obj tree)
 
-Insert an object to the spacial tree.
+Insert an object into the spacial tree.
+The object is indexed by =rectfun=.
 It conflicts with =cl:insert= so =shadow= it or attatch the package prefix.
 
 ** Generic (delete obj tree)
@@ -38,7 +45,7 @@ It conflicts with =cl:delete= so =shadow= it or attatch the package prefix.
 Search an object to the spacial tree.
 It conflicts with =cl:search= so =shadow= it or attatch the package prefix.
 
-* package =RECTANGLE=
+* package =RECTANGLES=
 
 This package provides a class =rectangle= and its methods.
 =Rectangle= represents a minimum bounding
