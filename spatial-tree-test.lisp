@@ -7,6 +7,7 @@
         :spatial-trees-protocol
         :rectangles
         :fiveam)
+  (:export :make-random-rectangle)
   (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
   (:shadowing-import-from :rectangles :intersection))
 

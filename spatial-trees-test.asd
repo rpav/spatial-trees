@@ -7,8 +7,3 @@
 		    (eval (read-from-string "(fiveam:run! :spatial-trees)"))
 		    (asdf:clear-system c)))
 
-(asdf:defsystem :spatial-trees-viz
-  :depends-on (:spatial-trees :fiveam)
-  :components
-  ((:file "spatial-tree-viz")))
-
