@@ -1,0 +1,65 @@
+
+In general, if you want to insert your arbitrary object into =spatial-trees= you should
+use *Package* =rectangle= to implement a function which returns its
+bounding rectangle.
+
+Functions such as =insert, delete= and the constructors for a spatial
+trees (such as R-tree or R*-tree) is in *Package* =SPATIAL-TREES=.
+
+
+
+* Package =SPATIAL-TREES=
+
+** Generic (make-spatial-tree kind :rectfun #'function)
+
++ kind :: Currently, one of =:r :x :greene :r-star=. The list could be
+          updated, and the planned feature is listed in [[./TODO]] . It specifies the instance of
+          the tree.
++ rectfun ( t -> rectangle:rectangle ) :: a function that *must* return a
+     bounding rectangle. In order to create a rectangle in a
+     user-defined =rectfun=, use =make-rectangle= exported by *Package* =RECTANGLES=.
+
+** Generic (bounding-rectangle tree)
+
+Returns a bounding rectangle of a tree.
+
+** Generic (insert obj tree)
+
+Insert an object to the spacial tree.
+It conflicts with =cl:insert= so =shadow= it or attatch the package prefix.
+
+** Generic (delete obj tree)
+
+Delete an object to the spacial tree.
+It conflicts with =cl:delete= so =shadow= it or attatch the package prefix.
+
+** Generic (search obj tree)
+
+Search an object to the spacial tree.
+It conflicts with =cl:search= so =shadow= it or attatch the package prefix.
+
+* package =RECTANGLE=
+
+This package provides a class =rectangle= and its methods.
+=Rectangle= represents a minimum bounding
+rectangle recognized by =spatial-trees=.
+The constructor of =Rectangle= is =make-rectangle=. Usage:
+
+: (make-rectangle :lows (list lx ly) :highs (list hx hy))
+
+The methods for =rectangle= are the following (where =rectangle= is
+denoted by =R=):
+
++ intersection =R,R -> R= :: This returns a rectangular product of two Rs.
++ minimum-bound =R,R -> R= :: This is a rectangular sum of Rs.
++ intersectp =R,R -> Boolean= :: Returns whether the two rectangles
+     intersects each other.
++ area =R -> Number= :: Returns a product of the dimension. It could
+     be an area, a volume or whatever n-dimentional volume of a
+     bounding rectangle.
++ lows, highs =R -> (list number*)= :: Returns the point which is
+     nearest to/farthest from (-Infty,-Infty,...-Infty).
+
+
+
+

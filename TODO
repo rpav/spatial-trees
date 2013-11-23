@@ -1,3 +1,5 @@
+-*- mode: org -*-
+
 Issues of code quality:
 
 * MBR and MINIMUM-BOUND-OF no longer need the tree as an argument,

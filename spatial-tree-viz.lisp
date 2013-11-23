@@ -149,3 +149,5 @@
     (dolist (r list)
       (spatial-trees:insert r tree))
     (inspect-spatial-tree tree)))
+
+(test-inspect-spatial-tree)
