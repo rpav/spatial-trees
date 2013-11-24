@@ -60,17 +60,6 @@
 ;; Originally, our guess for
 ;; the nearest neighbor distance (call it Nearest) is infinity.
 
-(defvar *tree*)
-(defun nearest-neighbor-search (point *tree* distance-function)
-  "point (list numbers*): a list in the same form as lows and highs.
-tree spatial-tree : spatial tree.
-distance-function point,point -> number : returns a *square* of the euclid distance
- between 2 points"
-  (ematch *tree*
-    ((rectangle root)
-     (%nns root point (list nil MOST-POSITIVE-DOUBLE-FLOAT)
-           distance-function))))
-
 (export '(nearest-neighbor-search
           mindist
           minimax-dist
@@ -79,20 +68,40 @@ distance-function point,point -> number : returns a *square* of the euclid dista
           abl-node
           abl-minimax-dist))
 
-(defstruct (abl-element (:conc-name abl-))
+(defstruct (abl-element (:constructor abl-element (node mindist minimax-dist))
+                        (:conc-name abl-))
   (node nil :type spatial-tree-node)
   (mindist 0 :type number)
   (minimax-dist 0 :type number))
 
-(defun %nns (node point nearest fn)
+(defstruct (nearest-element (:constructor nearest-element (object dist))
+                            (:conc-name nearest-))
+  (object nil)
+  (dist 0 :type number))
+
+(defvar *tree*)
+(defun nearest-neighbor-search (point *tree* distance-function)
+  "point (list numbers*): a list in the same form as lows and highs.
+tree spatial-tree : spatial tree.
+distance-function point,point -> number : returns a *square* of the euclid distance
+ between 2 points"
+  (ematch *tree*
+    ((rectangle root)
+     (%nns root point
+           (nearest-element nil MOST-POSITIVE-DOUBLE-FLOAT)
+           MOST-POSITIVE-DOUBLE-FLOAT
+           distance-function))))
+
+
+(defun %nns (node point nearest upper-bound fn)
   (match node
     ((spatial-tree-leaf-node children)
      (reduce (lambda (best current)
                (match best
-                 ((list _ mindist)
-                  (let ((dist (funcall fn point current)))
-                    (if (< dist mindist)
-                        (list current dist)
+                 ((nearest-element (object _) dist)
+                  (let ((newdist (funcall fn point current)))
+                    (if (< newdist dist)
+                        (nearest-element current newdist)
                         best)))))
              children
              :initial-value nearest))
@@ -108,13 +117,13 @@ distance-function point,point -> number : returns a *square* of the euclid dista
 
      ;; We then apply pruning strategies 1 and 2 to the ABL to
      ;; remove unnecessary branches.
-     (iter (with last = (prune-downward
+     (iter (with last = (prune-downward-1
                          node point nearest
                          (sort (mapcar (lambda (child)
                                          (let ((mbr (mbr child *tree*)))
-                                           (vector child
-                                                   (mindist point mbr)
-                                                   (minimax-dist point mbr))))
+                                           (abl-element child
+                                                        (mindist point mbr)
+                                                        (minimax-dist point mbr))))
                                        children) #'<
                                :key #'abl-mindist)))
 
@@ -143,7 +152,6 @@ it cannot contain the NN (thorems 1 and 2)."
                  (< min-minimax (abl-mindist node)))
                abl)))
 
-
 (defun prune-downward-2 (node point nearest abl)
   "2. an actual distance from P to a given object O
 which is greater than the MINMAXDIST(P,M) for
@@ -151,11 +159,24 @@ an MBR M can be discarded (actually replaced by
 it as an estimate of the NN distance) because M
 contains an object O’ which is nearer to P (theorem
 2). This is also used in downward pruning."
+
+  ;; ????
+  ;; does it mean there are raw objects in abl ?
   )
   
 (defun prune-upward (node point nearest abl)
-  "every MBR M with MINDIST(P,M) greater than
+  "(3.1) 3. every MBR M with MINDIST(P,M) greater than
 the actual distance from P to a given object O is
 discarded because it cannot enclose an object nearer
-than O (theorem 1). We use this in upward pruning."
-  )
+than O (theorem 1). We use this in upward pruning.
+
+ (3.2) we take this new estimate of the NN and
+apply pruning strategy 3 to remove all branches with
+M1ND1S7’(P, M) > Nearest for all MBRs M in the
+ABL."
+  (declare (ignorable node point))
+  (match nearest
+    ((nearest-element (object _) (dist nearest-dist))
+     (remove-if (lambda (node)
+                  (< nearest-dist (abl-mindist node)))
+                abl))))
