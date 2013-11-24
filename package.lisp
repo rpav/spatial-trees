@@ -1,28 +1,38 @@
-(cl:defpackage "SPATIAL-TREES"
-  (:use "CL")
-  (:shadow "DELETE" "SEARCH")
-  (:export "DELETE" "INSERT" "SEARCH" "BOUNDING-RECTANGLE"
-           "MAKE-SPATIAL-TREE"))
 
-(cl:defpackage "SPATIAL-TREES-PROTOCOL"
-  (:use "CL" "SPATIAL-TREES")
-  (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH")
+(in-package :cl-user)
+
+(defpackage :spatial-trees
+  (:use :cl)
+  (:shadow :delete :search)
+  (:export :delete :insert :search :bounding-rectangle
+           :make-spatial-tree))
+
+(defpackage :spatial-trees-protocol
+  (:use :cl :spatial-trees)
+  (:shadowing-import-from :spatial-trees :delete :search)
   (:export
    ;; interface definitions
-   "DELETE" "INSERT" "SEARCH"
+   :delete :insert :search
    ;; protocol functions
-   "CHOOSE-LEAF" "SPLIT-NODE" "CHILDREN" "RECORDS" "ROOT-NODE"
+   :choose-leaf :split-node :children :records :root-node
    ;; protocol classes
-   "SPATIAL-TREE" "SPATIAL-TREE-NODE" "SPATIAL-TREE-LEAF-NODE"
+   :spatial-tree :spatial-tree-node :spatial-tree-leaf-node
    ))
 
-(cl:defpackage "RECTANGLES"
-  (:use "CL")
-  (:shadow "INTERSECTION")
-  (:export "RECTANGLE" "MAKE-RECTANGLE" "INTERSECTION" "INTERSECTP"
-           "AREA" "MINIMUM-BOUND" "LOWS" "HIGHS"))
+(defpackage :rectangles
+  (:use :cl)
+  (:shadow :intersection)
+  (:export :rectangle :make-rectangle :intersection :intersectp
+           :area :minimum-bound :lows :highs))
 
-(cl:defpackage "SPATIAL-TREES-IMPL"
-  (:use "CL" "SPATIAL-TREES" "SPATIAL-TREES-PROTOCOL" "RECTANGLES")
-  (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH" "BOUNDING-RECTANGLE")
-  (:shadowing-import-from "RECTANGLES" "INTERSECTION"))
+(defpackage :spatial-trees-impl
+  (:use :cl
+        :spatial-trees
+        :spatial-trees-protocol
+        :rectangles)
+  (:export :rectfun
+           :leaf-node-entry
+           :datum
+           :mbr)
+  (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
+  (:shadowing-import-from :rectangles :intersection))

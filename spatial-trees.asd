@@ -1,5 +1,6 @@
 ;;; -*- mode: lisp -*-
 (asdf:defsystem :spatial-trees
+  :depends-on ()
   :components
   ((:module base
             :pathname #.(make-pathname :directory '(:relative))
