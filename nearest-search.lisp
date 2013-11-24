@@ -3,10 +3,12 @@
   (:use :cl
         :rectangles
         :spatial-trees-impl
+        :spatial-trees-protocol
         :optima
         :alexandria
         :iterate)
-  (:shadow :intersection))
+  (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
+  (:shadowing-import-from :rectangles :intersection))
 
 (in-package :spatial-trees.nns)
 
@@ -83,26 +85,29 @@
 (defun nearest-neighbor-search (point *tree* distance-function)
   "point (list numbers*): a list in the same form as lows and highs.
 tree spatial-tree : spatial tree.
-distance-function point,point -> number : returns a *square* of the euclid distance
+distance-function point,point -> number : returns a *square* of the euclid distance.
  between 2 points"
   (ematch *tree*
-    ((rectangle root)
-     (%nns root point
-           (nearest-element nil MOST-POSITIVE-DOUBLE-FLOAT)
-           MOST-POSITIVE-DOUBLE-FLOAT
-           distance-function))))
+    ((spatial-tree root-node)
+     (ematch (%nns root-node point
+                   (nearest-element nil MOST-POSITIVE-DOUBLE-FLOAT)
+                   distance-function)
+       ((nearest-element (object (leaf-node-entry datum)))
+        datum)))))
 
 
-(defun %nns (node point nearest upper-bound fn)
-  (match node
+(defun %nns (node point nearest fn)
+  (ematch node
     ((spatial-tree-leaf-node children)
      (reduce (lambda (best current)
-               (match best
-                 ((nearest-element (object _) dist)
-                  (let ((newdist (funcall fn point current)))
-                    (if (< newdist dist)
-                        (nearest-element current newdist)
-                        best)))))
+               (ematch best
+                 ((nearest-element dist)
+                  (ematch current
+                    ((leaf-node-entry datum)
+                     (let ((newdist (funcall fn point datum)))
+                       (if (< newdist dist)
+                           (nearest-element current newdist)
+                           best)))))))
              children
              :initial-value nearest))
     ((spatial-tree-node children)
@@ -127,8 +132,8 @@ distance-function point,point -> number : returns a *square* of the euclid dista
                                        children) #'<
                                :key #'abl-mindist)))
 
-           (for new-node in last)
-           (setf nearest (%nns new-node point nearest fn))
+           (for new-abl-node in last)
+           (setf nearest (%nns (abl-node new-abl-node) point nearest fn))
            (setf last
                  (prune-upward
                   node point nearest
@@ -137,9 +142,11 @@ distance-function point,point -> number : returns a *square* of the euclid dista
 
 
 (defun prune-downward (node point nearest abl)
-  (prune-downward-2
-   node point nearest
-   (prune-downward-1 node point nearest abl)))
+  (prune-downward-1 node point nearest abl))
+
+;; (prune-downward-2
+;;    node point nearest
+;;    (prune-downward-1 node point nearest abl))
 
 (defun prune-downward-1 (node point nearest abl)
   "1. an MBR M with MINDIST(P,M) greater than MINMAXDIST(P,M')
@@ -176,7 +183,7 @@ M1ND1S7’(P, M) > Nearest for all MBRs M in the
 ABL."
   (declare (ignorable node point))
   (match nearest
-    ((nearest-element (object _) (dist nearest-dist))
+    ((nearest-element (dist nearest-dist))
      (remove-if (lambda (node)
                   (< nearest-dist (abl-mindist node)))
                 abl))))

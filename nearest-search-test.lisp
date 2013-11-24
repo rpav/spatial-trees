@@ -3,6 +3,7 @@
   (:use :cl
         :rectangles
         :spatial-trees
+        :spatial-trees.nns
         :rectangles
         :optima
         :alexandria
@@ -34,10 +35,11 @@
   (sqrt (distance2 p1 p2)))
 
 (defun distance2 (p1 p2)
-  (match p1
-    ((p x y)
-     (match p2
-       ((p (x x2) (y y2))
+  (ematch p2
+    ((or (p (x x2) (y y2))
+         (list x2 y2))
+     (ematch p1
+       ((or (p x y) (list x y))
         (+ (^2 (- x2 x)) (^2 (- y2 y))))))))
 
 (test :point
@@ -63,12 +65,12 @@
 (defparameter *ymax* 5)
 
 (test :nns
-  (let (ps tree (center (p (/ *xmax* 2) (/ *ymax* 2))))
+  (let (ps tree (center (list (/ *xmax* 2) (/ *ymax* 2))))
     (finishes
       (setf ps (iter (repeat 100) (collect (random-p *xmax* *ymax*))))
       (setf tree (make-tree-of-points :r ps)))
     
-    (is (eq (nearest-neighbor-search center tree)
+    (is (eq (nearest-neighbor-search center tree #'distance2)
             (iter (for p in ps)
                   (finding p minimizing (distance p center)))))))
 
