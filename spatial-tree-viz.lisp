@@ -141,10 +141,17 @@
    (make-application-frame 'spatial-tree-viz
                            :tree tree :pretty-name "Spatial Tree Visualizer")))
 
+(defun make-random-rectangle (&optional (x-bias 0.0) (y-bias 0.0))
+  (let* ((lx (+ (random 1.0) x-bias))
+         (ly (+ (random 1.0) y-bias))
+         (hx (+ (random 1.0) lx))
+         (hy (+ (random 1.0) ly)))
+    (rectangles:make-rectangle :lows (list lx ly) :highs (list hx hy))))
+
 (defun test-inspect-spatial-tree (&optional (kind :r))
   "kind: one of '(:r :greene :r* :x)"
   (let* ((list (loop repeat 1000 collect
-                    (spatial-trees-test:make-random-rectangle)))
+                    (make-random-rectangle)))
          (tree (spatial-trees:make-spatial-tree kind :rectfun #'identity)))
     (dolist (r list)
       (spatial-trees:insert r tree))
