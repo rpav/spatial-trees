@@ -22,8 +22,6 @@
 (defstruct (p (:constructor p (x y)))
   x y)
 
-
-
 (defun random-p (x y)
   (p (random (float x)) (random (float y))))
 

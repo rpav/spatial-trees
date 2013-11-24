@@ -31,6 +31,7 @@
         :spatial-trees-protocol
         :rectangles)
   (:export :spatial-tree-node
-           :spatial-tree-leaf-node)
+           :spatial-tree-leaf-node
+           :mbr)
   (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
   (:shadowing-import-from :rectangles :intersection))

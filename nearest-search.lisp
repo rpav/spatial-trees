@@ -13,6 +13,8 @@
 ;; Nearest Neighbor Queries
 ;; N Roussopoulos, S Kelley, F Vincent - ACM sigmod record, 1995
 
+(declaim (inline ^2))
+(declaim (ftype (function (number) number) ^2))
 (defun ^2 (x) (* x x))
 
 (defun mindist (coordinates r)
@@ -54,11 +56,33 @@
                    coordinates
                    indices)))))
 
-(defun nearest-neighbor-search (point tree distance-function)
-  (ematch tree
+;; Section 3.2
+;; Originally, our guess for
+;; the nearest neighbor distance (call it Nearest) is infinity.
+
+(defvar *tree*)
+(defun nearest-neighbor-search (point *tree* distance-function)
+  "point (list numbers*): a list in the same form as lows and highs.
+tree spatial-tree : spatial tree.
+distance-function point,point -> number : returns a *square* of the euclid distance
+ between 2 points"
+  (ematch *tree*
     ((rectangle root)
      (%nns root point (list nil MOST-POSITIVE-DOUBLE-FLOAT)
            distance-function))))
+
+(export '(nearest-neighbor-search
+          mindist
+          minimax-dist
+          abl-element
+          abl-mindist
+          abl-node
+          abl-minimax-dist))
+
+(defstruct (abl-element (:conc-name abl-))
+  (node nil :type spatial-tree-node)
+  (mindist 0 :type number)
+  (minimax-dist 0 :type number))
 
 (defun %nns (node point nearest fn)
   (match node
@@ -73,13 +97,27 @@
              children
              :initial-value nearest))
     ((spatial-tree-node children)
-     
-     ;; I don't like the procedual style but I try to follow the
+     ;; Note: I don't like the procedual style but I try to follow the
      ;; notation in the paper
-     
+
+     ;; During the descending phase, at each newly visited nonleaf
+     ;; node, the algorithm computes the ordering metric
+     ;; bounds (e.g. MINDIST, Definition 2) for all its MBRs
+     ;; and sorts them (associated with their corresponding
+     ;; node) into an Active Branch List (ABL).
+
+     ;; We then apply pruning strategies 1 and 2 to the ABL to
+     ;; remove unnecessary branches.
      (iter (with last = (prune-downward
                          node point nearest
-                         (sort children #'< :key (curry point #'mindist))))
+                         (sort (mapcar (lambda (child)
+                                         (let ((mbr (mbr child *tree*)))
+                                           (vector child
+                                                   (mindist point mbr)
+                                                   (minimax-dist point mbr))))
+                                       children) #'<
+                               :key #'abl-mindist)))
+
            (for new-node in last)
            (setf nearest (%nns new-node point nearest fn))
            (setf last
@@ -88,8 +126,36 @@
                   last))
            (finally (return nearest))))))
 
-(defun prune-downward (node point nearest abl)
-  )
 
+(defun prune-downward (node point nearest abl)
+  (prune-downward-2
+   node point nearest
+   (prune-downward-1 node point nearest abl)))
+
+(defun prune-downward-1 (node point nearest abl)
+  "1. an MBR M with MINDIST(P,M) greater than MINMAXDIST(P,M')
+of another MBR M’ is discarded because
+it cannot contain the NN (thorems 1 and 2)."
+  (declare (ignorable node point nearest))
+  (let ((min-minimax (iter (for node in abl)
+                           (minimizing (abl-minimax-dist node)))))
+    (remove-if (lambda (node)
+                 (< min-minimax (abl-mindist node)))
+               abl)))
+
+
+(defun prune-downward-2 (node point nearest abl)
+  "2. an actual distance from P to a given object O
+which is greater than the MINMAXDIST(P,M) for
+an MBR M can be discarded (actually replaced by
+it as an estimate of the NN distance) because M
+contains an object O’ which is nearer to P (theorem
+2). This is also used in downward pruning."
+  )
+  
 (defun prune-upward (node point nearest abl)
+  "every MBR M with MINDIST(P,M) greater than
+the actual distance from P to a given object O is
+discarded because it cannot enclose an object nearer
+than O (theorem 1). We use this in upward pruning."
   )
