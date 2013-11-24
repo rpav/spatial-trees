@@ -26,6 +26,13 @@
 (defun random-p (x y)
   (p (random (float x)) (random (float y))))
 
+(defun p-list (p)
+  (match p
+    ((p x y)
+     (list x y))
+    ((list _ _)
+     p)))
+
 (defun =~ (a b)
   (< (abs (- a b)) 0.01))
 
@@ -65,12 +72,13 @@
 (defparameter *ymax* 5)
 
 (test :nns
-  (let (ps tree (center (list (/ *xmax* 2) (/ *ymax* 2))))
-    (finishes
-      (setf ps (iter (repeat 100) (collect (random-p *xmax* *ymax*))))
-      (setf tree (make-tree-of-points :r ps)))
-    
-    (is (eq (nearest-neighbor-search center tree #'distance2)
-            (iter (for p in ps)
-                  (finding p minimizing (distance p center)))))))
+  (let (ps tree)
+    (for-all ((center (lambda () (p-list (random-p *xmax* *ymax*)))))
+      (finishes
+        (setf ps (iter (repeat 1000) (collect (random-p *xmax* *ymax*))))
+        (setf tree (make-tree-of-points :r ps)))
+      
+      (is (eq (nearest-neighbor-search center tree #'distance2)
+              (iter (for p in ps)
+                    (finding p minimizing (distance p center))))))))
 
