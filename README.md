@@ -38,6 +38,7 @@ Here is some instructions:
 * Read the [API](./api.org) first and
   then read `spatial-tree-test.lisp`.
 * For Testing, run `(asdf:test-system :spatial-trees)`.
+* For Tutorial, see [tutorial.lisp](./tutorial.lisp)
 * In order to test a visual inspector, run  `(asdf:load-system
   :spatial-trees-viz)`. The function is defined in
   `spatial-tree-viz.lisp`, so read the source by yourself.
