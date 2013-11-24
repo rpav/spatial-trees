@@ -71,14 +71,20 @@
 (defparameter *xmax* 5)
 (defparameter *ymax* 5)
 
+(defparameter *kinds* '(:r :r* :x :greene))
+
 (test :nns
-  (let (ps tree)
-    (for-all ((center (lambda () (p-list (random-p *xmax* *ymax*)))))
-      (finishes
-        (setf ps (iter (repeat 1000) (collect (random-p *xmax* *ymax*))))
-        (setf tree (make-tree-of-points :r ps)))
-      
-      (is (eq (nearest-neighbor-search center tree #'distance2)
-              (iter (for p in ps)
-                    (finding p minimizing (distance p center))))))))
+  (iter (for kind in *kinds*)
+        (format *trace-output* "~&testing ~S...~&" kind)
+        (finishes
+          (let (ps tree result expected)
+            (for-all ((center (lambda () (p-list (random-p *xmax* *ymax*)))))
+              (finishes
+                (setf ps (iter (repeat 1000) (collect (random-p *xmax* *ymax*))))
+                (setf tree (make-tree-of-points kind ps))
+                (setf result (nearest-neighbor-search center tree #'distance2))
+                (setf expected (iter (for p in ps)
+                                     (finding p minimizing (distance p center)))))
+              
+              (is (eq expected result)))))))
 
