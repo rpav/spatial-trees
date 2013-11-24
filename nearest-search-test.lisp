@@ -2,15 +2,75 @@
 (defpackage :spatial-trees.nns.test
   (:use :cl
         :rectangles
-        :spatial-trees-impl
+        :spatial-trees
+        :rectangles
         :optima
         :alexandria
         :iterate
         :fiveam)
-  (:shadow :intersection :fail))
+  (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
+  (:shadowing-import-from :rectangles :intersection)
+  (:shadow :fail))
 
 (in-package :spatial-trees.nns.test)
 
 (def-suite :spatial-trees.nns)
 (in-suite :spatial-trees.nns)
+
+;;;; picked from tutorial.lisp
+
+(defstruct (p (:constructor p (x y)))
+  x y)
+
+
+
+(defun random-p (x y)
+  (p (random (float x)) (random (float y))))
+
+(defun =~ (a b)
+  (< (abs (- a b)) 0.01))
+
+(defun ^2 (x) (* x x))
+
+(defun distance (p1 p2)
+  (sqrt (distance2 p1 p2)))
+
+(defun distance2 (p1 p2)
+  (match p1
+    ((p x y)
+     (match p2
+       ((p (x x2) (y y2))
+        (+ (^2 (- x2 x)) (^2 (- y2 y))))))))
+
+(test :point
+  (finishes (p 5 6)
+            (random-p 5 5))
+  (is (=~ 1 (distance (p 5 6) (p 5 7))))
+  (is (=~ 2 (distance (p 5 6) (p 7 6))))
+  (is (=~ (sqrt 2) (distance (p 5 6) (p 6 7)))))
+
+(defun p-rect (p)
+  "make a bounding box function."
+  (with-slots (x y) p
+    (make-rectangle ;; << in package `rectangles'
+     :lows (list (- x 0.1) (- y 0.1))
+     :highs (list (+ x 0.1) (+ y 0.1)))))
+
+(defun make-tree-of-points (kind ps)
+  (let ((tree (make-spatial-tree kind :rectfun #'p-rect)))
+    (mapc (lambda (p) (insert p tree)) ps)
+    tree))
+
+(defparameter *xmax* 5)
+(defparameter *ymax* 5)
+
+(test :nns
+  (let (ps tree (center (p (/ *xmax* 2) (/ *ymax* 2))))
+    (finishes
+      (setf ps (iter (repeat 100) (collect (random-p *xmax* *ymax*))))
+      (setf tree (make-tree-of-points :r ps)))
+    
+    (is (eq (nearest-neighbor-search center tree)
+            (iter (for p in ps)
+                  (finding p minimizing (distance p center)))))))
 
