@@ -1,10 +1,13 @@
-(cl:defpackage "SPATIAL-TREES"
+
+(in-package :cl-user)
+
+(defpackage "SPATIAL-TREES"
   (:use "CL")
   (:shadow "DELETE" "SEARCH")
   (:export "DELETE" "INSERT" "SEARCH" "BOUNDING-RECTANGLE"
            "MAKE-SPATIAL-TREE"))
 
-(cl:defpackage "SPATIAL-TREES-PROTOCOL"
+(defpackage "SPATIAL-TREES-PROTOCOL"
   (:use "CL" "SPATIAL-TREES")
   (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH")
   (:export
@@ -16,13 +19,13 @@
    "SPATIAL-TREE" "SPATIAL-TREE-NODE" "SPATIAL-TREE-LEAF-NODE"
    ))
 
-(cl:defpackage "RECTANGLES"
+(defpackage "RECTANGLES"
   (:use "CL")
   (:shadow "INTERSECTION")
   (:export "RECTANGLE" "MAKE-RECTANGLE" "INTERSECTION" "INTERSECTP"
            "AREA" "MINIMUM-BOUND" "LOWS" "HIGHS"))
 
-(cl:defpackage "SPATIAL-TREES-IMPL"
+(defpackage "SPATIAL-TREES-IMPL"
   (:use "CL" "SPATIAL-TREES" "SPATIAL-TREES-PROTOCOL" "RECTANGLES")
   (:shadowing-import-from "SPATIAL-TREES" "DELETE" "SEARCH" "BOUNDING-RECTANGLE")
   (:shadowing-import-from "RECTANGLES" "INTERSECTION"))

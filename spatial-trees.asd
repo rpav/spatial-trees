@@ -16,17 +16,7 @@
              (:file "rstar-trees" :depends-on ("r-trees"))
              (:file "rplus-trees" :depends-on ("r-trees"))
              (:file "x-trees" :depends-on ("r-trees" "rstar-trees"))))
-   (:module viz
-            :depends-on (base)
-            :pathname #.(make-pathname :directory '(:relative))
-            :components
-            ((:static-file "spatial-tree-viz"
-                           :pathname #p"spatial-tree-viz.lisp")))
-   (:module tests
-            :depends-on (base)
-            :pathname #.(make-pathname :directory '(:relative))
-            :components
-            ((:static-file "spatial-tree-test"
-                           :pathname #p"spatial-tree-test.lisp")))
    (:static-file "LICENCE")
-   (:static-file "TODO")))
+   (:static-file "TODO"))
+  :perform (test-op :after (op c) 
+		    (asdf:load-system :spatial-trees-test)))
