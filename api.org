@@ -18,9 +18,7 @@ You can avoid them by adding the following to your =defpackage=:
 #+END_SRC
 
 Additionally, package =SPATIAL-TREES.NNS= provides an efficient
-nearest neighbor search function. This package is in a different system
-=SPATIAL-TREES.NNS= (same name as the package), so you have to load
-the system independently before using the package.
+nearest neighbor search function. See the description below.
 
 ** package =SPATIAL-TREES= 
 
@@ -96,6 +94,13 @@ denoted by =R=):
 ** package =SPATIAL-TREES.NNS=
 
 Provides Nearest Neighbor Search (NNS) function.
+
+This package is in a different system
+=SPATIAL-TREES.NNS= (same name as the package),
+so you have to load the system independently before using the package.
+Similarly, the unit test on this system is provided independently to the
+main system. =(asdf:test-system :spatial-trees.nns)= will run the test.
+
 The implementation is based on /Nearest Neighbor Queries/,
 N Roussopoulos, S Kelley, F Vincent - /ACM sigmod record, 1995/.
 It implements two good bounding heuristics, /mindist/ and
