@@ -20,8 +20,9 @@
 
 ;;;; picked from tutorial.lisp
 
-(defstruct (p (:constructor p (x y)))
-  x y)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defstruct (p (:constructor p (x y)))
+    x y))
 
 (defun random-p (x y)
   (p (random (float x)) (random (float y))))
