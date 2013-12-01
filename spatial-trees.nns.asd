@@ -4,4 +4,6 @@
                :alexandria
                :iterate)
   :components
-  ((:file :nearest-search)))
+  ((:file :nearest-search))
+  :perform (test-op :after (op c) 
+		    (asdf:load-system :spatial-trees.nns.test)))

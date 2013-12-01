@@ -20,4 +20,5 @@
    (:static-file "LICENCE")
    (:static-file "TODO"))
   :perform (test-op :after (op c) 
-		    (asdf:load-system :spatial-trees-test)))
+		    (asdf:load-system :spatial-trees.test)
+                    (asdf:test-system :spatial-trees.nns)))

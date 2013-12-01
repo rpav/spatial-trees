@@ -1,5 +1,5 @@
 ;;; -*- mode: lisp -*-
-(asdf:defsystem :spatial-trees-test
+(asdf:defsystem :spatial-trees.test
   :depends-on (:spatial-trees :fiveam)
   :components
   ((:file "spatial-tree-test"))
