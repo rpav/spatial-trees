@@ -72,7 +72,10 @@
 (defparameter *xmax* 5)
 (defparameter *ymax* 5)
 
-(defparameter *kinds* '(:r :r* :x :greene))
+(defparameter *kinds* '(:r
+                        #+sbcl :r*
+                        :x
+                        :greene))
 
 (test :nns
   (iter (for kind in *kinds*)
