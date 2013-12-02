@@ -20,8 +20,9 @@
 
 ;;;; picked from tutorial.lisp
 
-(defstruct (p (:constructor p (x y)))
-  x y)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defstruct (p (:constructor p (x y)))
+    x y))
 
 (defun random-p (x y)
   (p (random (float x)) (random (float y))))
@@ -71,7 +72,10 @@
 (defparameter *xmax* 5)
 (defparameter *ymax* 5)
 
-(defparameter *kinds* '(:r :r* :x :greene))
+(defparameter *kinds* '(:r
+                        #+sbcl :r*
+                        :x
+                        :greene))
 
 (test :nns
   (iter (for kind in *kinds*)

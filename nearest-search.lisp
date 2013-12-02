@@ -70,16 +70,19 @@
           abl-node
           abl-minimax-dist))
 
-(defstruct (abl-element (:constructor abl-element (node mindist minimax-dist))
-                        (:conc-name abl-))
-  (node nil :type spatial-tree-node)
-  (mindist 0 :type number)
-  (minimax-dist 0 :type number))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  ;; required, because these structures should be loaded before the optima expansion
+  ;;  -- this was missed during the development.
+  (defstruct (abl-element (:constructor abl-element (node mindist minimax-dist))
+                          (:conc-name abl-))
+    (node nil :type spatial-tree-node)
+    (mindist 0 :type number)
+    (minimax-dist 0 :type number))
 
-(defstruct (nearest-element (:constructor nearest-element (object dist))
-                            (:conc-name nearest-))
-  (object nil)
-  (dist 0 :type number))
+  (defstruct (nearest-element (:constructor nearest-element (object dist))
+                              (:conc-name nearest-))
+    (object nil)
+    (dist 0 :type number)))
 
 (defvar *tree*)
 (defun nearest-neighbor-search (point *tree* distance-function)
