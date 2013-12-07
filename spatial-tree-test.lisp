@@ -1,15 +1,17 @@
 ;;; Somewhat rudimentary tests of external functionality
 
 (in-package :cl-user)
-(defpackage spatial-trees-test
-  (:use :cl
-        :spatial-trees
-        :spatial-trees-protocol
-        :rectangles
-        :fiveam)
-  (:export :make-random-rectangle)
-  (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
-  (:shadowing-import-from :rectangles :intersection))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :spatial-trees-test)
+    (defpackage spatial-trees-test
+      (:use :cl
+            :spatial-trees
+            :spatial-trees-protocol
+            :rectangles
+            :fiveam)
+      (:export :make-random-rectangle)
+      (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
+      (:shadowing-import-from :rectangles :intersection))))
 
 (in-package :spatial-trees-test)
 (def-suite :spatial-trees)

@@ -1,17 +1,19 @@
 
-(defpackage :spatial-trees.nns.test
-  (:use :cl
-        :rectangles
-        :spatial-trees
-        :spatial-trees.nns
-        :rectangles
-        :optima
-        :alexandria
-        :iterate
-        :fiveam)
-  (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
-  (:shadowing-import-from :rectangles :intersection)
-  (:shadow :fail))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :spatial-trees.nns.test)
+    (defpackage :spatial-trees.nns.test
+      (:use :cl
+            :rectangles
+            :spatial-trees
+            :spatial-trees.nns
+            :rectangles
+            :optima
+            :alexandria
+            :iterate
+            :fiveam)
+      (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
+      (:shadowing-import-from :rectangles :intersection)
+      (:shadow :fail))))
 
 (in-package :spatial-trees.nns.test)
 
