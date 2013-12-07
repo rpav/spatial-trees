@@ -18,7 +18,9 @@
 (in-suite :spatial-trees)
 
 
-(defvar *kinds* '(:r :greene :r* :x))
+(defparameter *kinds* '(:r :greene
+                        ;; :r*
+                        :x))
 
 (defun make-random-rectangle (&optional (x-bias 0.0) (y-bias 0.0))
   (let* ((lx (+ (random 0.9) x-bias))
