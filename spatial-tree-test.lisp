@@ -21,10 +21,10 @@
 (defvar *kinds* '(:r :greene :r* :x))
 
 (defun make-random-rectangle (&optional (x-bias 0.0) (y-bias 0.0))
-  (let* ((lx (+ (random 1.0) x-bias))
-         (ly (+ (random 1.0) y-bias))
-         (hx (+ (random 1.0) lx))
-         (hy (+ (random 1.0) ly)))
+  (let* ((lx (+ (random 0.9) x-bias))
+         (ly (+ (random 0.9) y-bias))
+         (hx (+ (random 0.9) lx))
+         (hy (+ (random 0.9) ly)))
     (make-rectangle :lows (list lx ly) :highs (list hx hy))))
 
 (defun gen-rectangle ()
