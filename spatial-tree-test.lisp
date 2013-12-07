@@ -37,53 +37,65 @@
       (push kind seen)
       (&body))))
 
+(defparameter *howmany* 201)
+
+(test :insert
+  (with-fixture tree-kind ()
+    (for-all ((list (gen-list :length (constantly *howmany*)
+                              :elements (gen-rectangle))))
+      (let ((tree (make-spatial-tree kind :rectfun #'identity)))
+        (finishes
+          (dolist (r list)
+            (insert r tree)))))))
+
+;; minimal failure case:
+;; (loop for kind in '(:r :greene :r* :x)
+;;    do (loop repeat 100
+;;          for list = (loop repeat 200 collect (make-random-rectangle))
+;;          do (let ((tree (make-spatial-tree kind :rectfun #'identity)))
+;;               (dolist (r list)
+;;                 (insert r tree)))))
+
 (test (:random-search :fixture tree-kind)
-  (for-all ((list (gen-list :length (constantly 1000)
+  (for-all ((list (gen-list :length (constantly *howmany*)
                             :elements (gen-rectangle))))
     (let ((tree (make-spatial-tree kind :rectfun #'identity)))
       (finishes
         (dolist (r list)
           (insert r tree)))
       (let* ((r (make-random-rectangle))
-             (result (search r tree))
              (expected (remove-if-not (lambda (x) (intersectp x r)) list)))
-          (is (null (set-difference result
-                                    expected
+        (let (result)
+          (finishes
+            (setf result (search r tree)))
+          (is-true result)
+          (is (null (set-difference result expected
                                     :key (lambda (x)
                                            (list (lows x) (highs x)))
-                                    :test #'equal))
-              "~&In random search for kind ~S: ~S and ~S differ"
-              kind result expected)))))
-
-(defun gen-trisected-rectangle ()
-  (let ((i 0))
-    (lambda ()
-      (incf i)
-      (case (mod i 3)
-        (0 (make-random-rectangle 0.0 0.0))
-        (1 (make-random-rectangle -2.0 -2.0))
-        (2 (make-random-rectangle 2.0 2.0))))))
+                                    :test #'equal)))
+          (is (null (set-difference result expected
+                                    :key (lambda (x)
+                                           (list (lows x) (highs x)))
+                                    :test #'equal))))))))
 
 (test (:trisected-search :fixture tree-kind)
-  (let ((n 1000))
-    (for-all ((list (gen-list :length (constantly 1000)
-                              :elements (gen-trisected-rectangle))))
-      (let ((tree (make-spatial-tree kind :rectfun #'identity)))
-        (dolist (r list)
-          (insert r tree))
-        (let ((r (make-rectangle :lows '(0.0 0.0) :highs '(1.0 1.0))))
-          ;; FIXME: find a way to test the relative speed of the following
-          ;; (sbcl-specifically if necessary).
-          (search r tree)
-          (remove-if-not (lambda (x) (intersectp x r)) list)
-          (is (= (length (search r tree)) n)
-              "In trisected search for kind ~S, ~s=~s and ~s=~s differ"
-              kind '(length (search r tree)) (length (search r tree))
-              'n n))))))
+  (for-all ((list (lambda ()
+                    (loop repeat *howmany*
+                         collect (make-random-rectangle 0.0 0.0)
+                         collect (make-random-rectangle -2.0 -2.0)
+                         collect (make-random-rectangle 2.0 2.0)))))
+    (let ((tree (make-spatial-tree kind :rectfun #'identity)))
+      (dolist (r list)
+        (insert r tree))
+      (let ((r (make-rectangle :lows '(0.0 0.0) :highs '(1.0 1.0))))
+        ;; FIXME: find a way to test the relative speed of the following
+        ;; (sbcl-specifically if necessary).
+        (search r tree)
+        (remove-if-not (lambda (x) (intersectp x r)) list)
+        (is (= *howmany* (length (search r tree))))))))
 
 (test (:arbitrary-object-search :fixture tree-kind)
-  (let* ((n 100)
-         (list (loop repeat n
+  (let* ((list (loop repeat *howmany*
                   for r = (make-random-rectangle)
                   collect (cons (lows r) (highs r))))
          (rectfun (lambda (x) (make-rectangle :lows (car x) :highs (cdr x))))
@@ -100,14 +112,11 @@
                  :key (lambda (x)
                         (let ((r (funcall rectfun x)))
                           (list (lows r) (highs r))))
-                 :test #'equal))
-          "Arbitrary object search for kind ~S: ~S and ~S differ"
-          kind result expected))))
+                 :test #'equal))))))
 
 
 (test (:deletion :fixture tree-kind)
-  (let* ((n 100)
-         (list (loop repeat n collect (make-random-rectangle)))
+  (let* ((list (loop repeat *howmany* collect (make-random-rectangle)))
          (tree (make-spatial-tree kind :rectfun #'identity)))
     (dolist (r list)
       (insert r tree))
