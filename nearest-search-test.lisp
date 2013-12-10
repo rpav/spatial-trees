@@ -1,17 +1,19 @@
 
-(defpackage :spatial-trees.nns.test
-  (:use :cl
-        :rectangles
-        :spatial-trees
-        :spatial-trees.nns
-        :rectangles
-        :optima
-        :alexandria
-        :iterate
-        :fiveam)
-  (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
-  (:shadowing-import-from :rectangles :intersection)
-  (:shadow :fail))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :spatial-trees.nns.test)
+    (defpackage :spatial-trees.nns.test
+      (:use :cl
+            :rectangles
+            :spatial-trees
+            :spatial-trees.nns
+            :rectangles
+            :optima
+            :alexandria
+            :iterate
+            :fiveam)
+      (:shadowing-import-from :spatial-trees :delete :search :bounding-rectangle)
+      (:shadowing-import-from :rectangles :intersection)
+      (:shadow :fail))))
 
 (in-package :spatial-trees.nns.test)
 
@@ -73,15 +75,14 @@
 (defparameter *ymax* 5)
 
 (defparameter *kinds* '(:r
-                        #+sbcl :r*
+                        ;; #+sbcl :r*
                         :x
                         :greene))
 
 (test :nns
   (iter (for kind in *kinds*)
         (format *trace-output* "~&testing ~S...~&" kind)
-        (finishes
-          (let (ps tree result expected)
+        (let (ps tree result expected)
             (for-all ((center (lambda () (p-list (random-p *xmax* *ymax*)))))
               (finishes
                 (setf ps (iter (repeat 1000) (collect (random-p *xmax* *ymax*))))
@@ -90,5 +91,5 @@
                 (setf expected (iter (for p in ps)
                                      (finding p minimizing (distance p center)))))
               
-              (is (eq expected result)))))))
+              (is (eq expected result))))))
 
