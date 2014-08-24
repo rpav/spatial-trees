@@ -81,7 +81,12 @@
 
 (defgeneric intersectp (one two))
 (defmethod intersectp ((r1 rectangle) (r2 rectangle))
-  (every #'%intersection/1d (lows r1) (highs r1) (lows r2) (highs r2)))
+  (loop for l1 in (lows r1)
+        for h1 in (highs r1)
+        for l2 in (lows r2)
+        for h2 in (highs r2)
+        always (or (and (bound<= l1 l2) (bound<= l2 h1))
+                   (and (bound<= l2 l1) (bound<= l1 h2)))))
 
 (defgeneric intersection (one two))
 (defmethod intersection ((r1 rectangle) (r2 rectangle))
