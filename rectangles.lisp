@@ -79,14 +79,18 @@
     ((and (bound<= l1 l2) (bound<= l2 h1)) (cons l2 (boundmin h1 h2)))
     ((and (bound<= l2 l1) (bound<= l1 h2)) (cons l1 (boundmin h1 h2)))))
 
+(declaim (inline %intersect/1d-p))
+(defun %intersect/1d-p (l1 h1 l2 h2)
+  (or (and (bound<= l1 l2) (bound<= l2 h1))
+      (and (bound<= l2 l1) (bound<= l1 h2))))
+
 (defgeneric intersectp (one two))
 (defmethod intersectp ((r1 rectangle) (r2 rectangle))
   (loop for l1 in (lows r1)
         for h1 in (highs r1)
         for l2 in (lows r2)
         for h2 in (highs r2)
-        always (or (and (bound<= l1 l2) (bound<= l2 h1))
-                   (and (bound<= l2 l1) (bound<= l1 h2)))))
+        always (%intersect/1d-p l1 h1 l2 h2)))
 
 (defgeneric intersection (one two))
 (defmethod intersection ((r1 rectangle) (r2 rectangle))
